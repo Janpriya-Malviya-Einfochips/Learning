@@ -1,0 +1,27 @@
+
+
+
+> How Tasklet threads starts 
+
+Step 1 & 2 just init settiup ap paramets
+1. From Start Kernel main.c ---> softirq_init()
+									|--> 	open_softirq(TASKLET_SOFTIRQ, tasklet_action);
+
+	Now what is tasklet_action fn ? , Softirq.c mantain a vecotr ( tasklet_vec ) per cpu and when user register a tasklet it add the tasklet fn pointer or taskletcb in tasklet_vec
+	When every tasklet API tasklet_action API called from softirq sussystem , it  just itrate the tasklet_vec and call user API accorndinly 
+	
+
+2. open_softirq() what it do ?
+	it just assign a cb which calls tasklet_action() to call user registered cbs
+
+
+> spawn_ksoftirqd()
+
+
+3. spawn_ksoftirqd() is reposible to start ksoftirqd/0 threads per CPU . That API calls during kernel init section start calling
+	
+spawn_ksoftirqd()-->smpboot_register_percpu_thread() argument as smp_hotplug_thread with CB API run_ksoftirqd()
+	mean when every softirq kernel thread ticked it will run  run_ksoftirqd() which will going to call tasklet_action() which we register during open_softirq() and inside that it scan tasklet_vec[] and call register callbacks
+
+4. when user register a tasklet using setup_tasklet() or tasklet_init() it tick the event or interuppt for softirq of that cpu on wihc we register after interuppt raised kernel calls run_ksoftirqd()
+
